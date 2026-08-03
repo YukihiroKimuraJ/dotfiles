@@ -1,0 +1,4 @@
+# Copy this file to ~/.gitconfig-private, replace the placeholder, and run:
+# chmod 600 ~/.gitconfig-private
+[privacy]
+	blockedEmail = YOUR_PRIVATE_EMAIL@example.com
