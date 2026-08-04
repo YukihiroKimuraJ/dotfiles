@@ -1,8 +1,22 @@
 [user]
 	name = YukihiroKimuraJ
-	email = yk24dec21@gmail.com
+	email = 229702967+YukihiroKimuraJ@users.noreply.github.com
+	useConfigOnly = true
+
+# Machine-private values, including addresses that must never be committed.
+[include]
+	path = ~/.gitconfig-private
+
+# Repositories cloned under ~/oss/ use a reachable public address when a
+# project's contribution policy requires one.
+[includeIf "gitdir:~/oss/"]
+	path = ~/.gitconfig-oss
 [filter "lfs"]
 	process = git-lfs filter-process
 	required = true
 	clean = git-lfs clean -- %f
 	smudge = git-lfs smudge -- %f
+[core]
+	hooksPath = ~/dotfiles/home/.git-hooks
+[alias]
+	whoami = var GIT_AUTHOR_IDENT

@@ -1,0 +1,8 @@
+# Identity for OSS projects that require a real, reachable email address.
+[user]
+	name = Yukihiro Kimura
+	email = me@yukihirokimura.com
+
+# Explicit DCO sign-off: git cs -m "message"
+[alias]
+	cs = commit -s

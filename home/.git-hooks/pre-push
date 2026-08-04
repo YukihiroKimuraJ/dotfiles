@@ -1,0 +1,67 @@
+#!/bin/sh
+
+# Block configured private addresses in every commit introduced by a push.
+# Values live in ~/.gitconfig-private so this public hook contains no secrets.
+
+set -eu
+
+zero_oid=0000000000000000000000000000000000000000
+blocked_emails=$(git config --global --includes --get-all privacy.blockedEmail || true)
+
+[ -n "$blocked_emails" ] || exit 0
+
+is_blocked_email() {
+	candidate=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
+
+	for blocked_email in $blocked_emails; do
+		blocked_email=$(printf '%s' "$blocked_email" | tr '[:upper:]' '[:lower:]')
+		[ "$candidate" = "$blocked_email" ] && return 0
+	done
+
+	return 1
+}
+
+reject_commit_if_private() {
+	commit=$1
+	author_email=$(git show -s --format='%ae' "$commit")
+	committer_email=$(git show -s --format='%ce' "$commit")
+
+	if is_blocked_email "$author_email" || is_blocked_email "$committer_email"; then
+		short_commit=$(git rev-parse --short "$commit")
+		printf '%s\n' "Blocked push: commit $short_commit contains a configured private email." >&2
+		printf '%s\n' "Amend the commit with the intended identity, then push again." >&2
+		exit 1
+	fi
+}
+
+reject_tag_if_private() {
+	local_ref=$1
+	local_oid=$2
+
+	[ "$(git cat-file -t "$local_oid")" = tag ] || return 0
+
+	tagger_email=$(git for-each-ref --format='%(taggeremail)' "$local_ref" | sed -n 's/^<\(.*\)>$/\1/p')
+	if [ -n "$tagger_email" ] && is_blocked_email "$tagger_email"; then
+		printf '%s\n' "Blocked push: annotated tag ${local_ref#refs/tags/} contains a configured private email." >&2
+		printf '%s\n' "Recreate the tag with the intended identity, then push again." >&2
+		exit 1
+	fi
+}
+
+while read -r local_ref local_oid remote_ref remote_oid; do
+	[ "$local_oid" = "$zero_oid" ] && continue
+
+	case "$local_ref" in
+		refs/tags/*) reject_tag_if_private "$local_ref" "$local_oid" ;;
+	esac
+
+	if [ "$remote_oid" = "$zero_oid" ]; then
+		commits=$(git rev-list "$local_oid" --not --remotes)
+	else
+		commits=$(git rev-list "$remote_oid..$local_oid")
+	fi
+
+	for commit in $commits; do
+		reject_commit_if_private "$commit"
+	done
+done
