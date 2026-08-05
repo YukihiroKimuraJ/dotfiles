@@ -17,6 +17,13 @@
 	clean = git-lfs clean -- %f
 	smudge = git-lfs smudge -- %f
 [core]
+	pager = delta
 	hooksPath = ~/dotfiles/home/.git-hooks
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	navigate = true
+[merge]
+	conflictstyle = zdiff3
 [alias]
 	whoami = var GIT_AUTHOR_IDENT
