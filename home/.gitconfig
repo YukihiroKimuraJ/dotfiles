@@ -9,7 +9,10 @@
 
 # Repositories cloned under ~/oss/ use a reachable public address when a
 # project's contribution policy requires one.
-[includeIf "gitdir:~/oss/"]
+# gitdir/i (case-insensitive) because APFS is case-insensitive by default:
+# a clone made in ~/OSS/ would not match "gitdir:" and would silently fall
+# back to the noreply identity above.
+[includeIf "gitdir/i:~/oss/"]
 	path = ~/.gitconfig-oss
 [filter "lfs"]
 	process = git-lfs filter-process
