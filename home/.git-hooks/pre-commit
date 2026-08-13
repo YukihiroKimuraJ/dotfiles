@@ -1,0 +1,44 @@
+#!/bin/sh
+#
+# Global pre-commit hook. Runs in every repository on this machine because
+# core.hooksPath points at this directory.
+#
+#   1. gitleaks — stop secrets from entering any repository's history.
+#   2. lefthook — hand repository-specific checks to its own lefthook.yml.
+#
+# Bypass with `git commit --no-verify`. If gitleaks reports a false positive,
+# allowlist the exact string (never disable the rule) in the repository's
+# .gitleaks.toml, or in ~/.config/gitleaks/gitleaks.toml for a value that is a
+# false positive everywhere.
+
+set -eu
+
+hooks_dir=$(dirname "$0")
+
+if command -v gitleaks >/dev/null 2>&1; then
+	repo_root=$(git rev-parse --show-toplevel 2>/dev/null || true)
+	global_config="$HOME/.config/gitleaks/gitleaks.toml"
+
+	# --log-level warn keeps a clean commit completely silent (the default info
+	# level narrates every scan) while still printing "leaks found" on a hit.
+	# --verbose is what prints the finding details, so it stays.
+	set -- git --staged --no-banner --redact --verbose --log-level warn
+
+	# gitleaks does not merge configs. A repository that ships its own
+	# .gitleaks.toml is picked up automatically and owns its rules; only fall
+	# back to the global config when the repository has none.
+	if [ -f "$global_config" ] && { [ -z "$repo_root" ] || [ ! -f "$repo_root/.gitleaks.toml" ]; }; then
+		set -- "$@" --config "$global_config"
+	fi
+
+	if ! gitleaks "$@"; then
+		echo "" >&2
+		echo "秘密情報の可能性がある文字列を検出したためコミットを中止しました。" >&2
+		echo "誤検知なら .gitleaks.toml の allowlist に「その文字列だけ」を追加すること。" >&2
+		exit 1
+	fi
+else
+	echo "gitleaks が未導入のため秘密情報チェックを飛ばします (brew install gitleaks)" >&2
+fi
+
+"$hooks_dir/_lefthook-delegate" pre-commit

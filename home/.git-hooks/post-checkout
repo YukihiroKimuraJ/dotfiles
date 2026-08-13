@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+# Global post-checkout hook. Only delegates; there is no global post-checkout
+# concern. See _lefthook-delegate for why hand-written hooks live here.
+
+set -eu
+
+exec "$(dirname "$0")/_lefthook-delegate" post-checkout "$@"

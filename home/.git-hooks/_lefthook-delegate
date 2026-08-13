@@ -1,0 +1,61 @@
+#!/bin/sh
+#
+# _lefthook-delegate — hand a git hook over to the repository's own lefthook.
+#
+# Not a git hook itself (the leading underscore is not a hook name, so git
+# ignores this file). It is called by the hooks in this directory.
+#
+# Why this exists: core.hooksPath is set globally to this directory, which
+# makes git ignore every repository's .git/hooks. `lefthook install` reacts to
+# that by writing its shim in here, which hardcodes one project's node_modules
+# path into a hook shared by every repository. This script keeps that from
+# happening: global hooks stay hand-written and version-controlled, and
+# repository-specific checks stay in each repository's lefthook.yml.
+#
+# Usage: _lefthook-delegate <hook-name> [hook args...]
+
+set -eu
+
+hook_name="$1"
+shift
+
+# Same escape hatch lefthook's own shim honors.
+if [ "${LEFTHOOK:-}" = "0" ]; then
+	exit 0
+fi
+
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+[ -n "$repo_root" ] || exit 0
+
+# Only act on repositories that actually configure lefthook. Everywhere else
+# this is a no-op, which is why non-lefthook repositories stay silent.
+config_found=false
+for candidate in \
+	lefthook.yml lefthook.yaml .lefthook.yml .lefthook.yaml \
+	lefthook.toml .lefthook.toml lefthook.json .lefthook.json
+do
+	if [ -f "$repo_root/$candidate" ]; then
+		config_found=true
+		break
+	fi
+done
+
+if [ "$config_found" = false ]; then
+	exit 0
+fi
+
+# Resolve the repository's own lefthook first so its pinned version is used,
+# and never hardcode a path here.
+if [ -x "$repo_root/node_modules/.bin/lefthook" ]; then
+	lefthook_bin="$repo_root/node_modules/.bin/lefthook"
+elif command -v lefthook >/dev/null 2>&1; then
+	lefthook_bin=lefthook
+else
+	echo "lefthook.yml があるが lefthook が見つからないため ${hook_name} を飛ばします" >&2
+	exit 0
+fi
+
+# --no-auto-install is required: core.hooksPath is set globally on purpose, and
+# without this flag lefthook tries to sync hooks on every invocation, prints a
+# six-line warning about it, and offers to overwrite this directory.
+exec "$lefthook_bin" run "$hook_name" --no-auto-install "$@"

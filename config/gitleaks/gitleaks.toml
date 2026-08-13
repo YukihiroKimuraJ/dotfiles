@@ -1,0 +1,35 @@
+# Global gitleaks config.
+#
+# Used by the global pre-commit hook (home/.git-hooks/pre-commit) for any
+# repository that does not ship its own .gitleaks.toml.
+#
+# gitleaks does NOT merge configs: when a repository has its own
+# .gitleaks.toml, that file is used instead of this one and must repeat any
+# rule below that it still wants.
+
+[extend]
+# Keep gitleaks' built-in rules (AWS, GitHub, Slack, Stripe, private keys, ...)
+# and add the ones missing from them.
+useDefault = true
+
+# gitleaks 8.30 has no built-in rule for Anthropic keys.
+[[rules]]
+id = "anthropic-api-key"
+description = "Anthropic API key"
+regex = '''sk-ant-(?:api|admin)[0-9]{2}-[A-Za-z0-9_-]{32,}'''
+keywords = ["sk-ant-"]
+
+# A base32 TOTP shared secret is as good as the second factor it replaces.
+[[rules]]
+id = "totp-secret"
+description = "Base32 TOTP shared secret assigned to a variable"
+regex = '''(?i)(?:totp|otp)[_-]?secret['"]?\s*[:=]\s*['"]?[A-Z2-7]{32}'''
+keywords = ["totp", "otp_secret"]
+
+[allowlist]
+description = "誤検知として確認済みのもの"
+regexes = [
+  # RFC 6238 Appendix B のテストベクタ。共有鍵 "12345678901234567890" の
+  # base32 表現で、実在の秘密ではない。TOTP 実装のテストで必ず出てくる。
+  '''GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ''',
+]
