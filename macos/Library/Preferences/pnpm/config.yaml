@@ -1,0 +1,21 @@
+# Global pnpm config.
+#
+# Cooldown: refuse versions published less than 7 days ago (10080 minutes).
+# The npm-side equivalent lives in ~/.npmrc as `min-release-age=7` -- note the
+# unit differs: pnpm counts MINUTES, npm counts DAYS.
+#
+# pnpm >= 11 already defaults to 1440 (1 day). This raises it to 7 days, which
+# is the range Datadog and GMO Flatt Security both recommend; Renovate ships
+# 3 days as its best-practice default.
+#
+# Scope: applies to every pnpm project that does not set `minimumReleaseAge`
+# in its own pnpm-workspace.yaml. A project-level value WINS over this file.
+#
+# Setting this explicitly also turns on `minimumReleaseAgeStrict`, so when no
+# version satisfies the window, the install FAILS instead of silently falling
+# back to an older release. That is the intended behaviour.
+#
+# To take an urgent patch before the window elapses, exempt it explicitly:
+#   minimumReleaseAgeExclude:
+#     - some-package
+minimumReleaseAge: 10080

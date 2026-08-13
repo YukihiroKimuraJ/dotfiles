@@ -13,8 +13,25 @@ Personal macOS configuration, managed as symlinks.
 | `home/.gitconfig` | `~/.gitconfig` | default noreply identity + email guard |
 | `home/.gitconfig-oss` | `~/.gitconfig-oss` | real identity for repositories under `~/oss/` |
 | `home/.git-hooks/pre-push` | global hook | blocks private email addresses before push |
+| `home/.npmrc` | `~/.npmrc` | npm/pnpm registry (Takumi Guard) + 7-day release cooldown |
 | `config/starship.toml` | `~/.config/starship.toml` | [Starship](https://starship.rs) prompt |
+| `config/gitleaks/gitleaks.toml` | `~/.config/gitleaks/gitleaks.toml` | [gitleaks](https://github.com/gitleaks/gitleaks) rules used by the global pre-commit hook |
 | `config/karabiner/karabiner.json` | `~/.config/karabiner/karabiner.json` | [Karabiner-Elements](https://karabiner-elements.pqrs.org) key remaps |
+| `macos/Library/Preferences/pnpm/config.yaml` | `~/Library/Preferences/pnpm/config.yaml` | pnpm's 7-day release cooldown (`minimumReleaseAge`) |
+
+Three layouts map to three destinations:
+
+| Directory | Destination | Use for |
+|-----------|-------------|---------|
+| `home/` | `~/<file>` | dotfiles directly in the home directory |
+| `config/` | `~/.config/<path>` | tools that read `~/.config` |
+| `macos/` | `~/<path>` | macOS-only paths that fit neither, e.g. `~/Library/Preferences` |
+
+`macos/` exists because some tools ignore `~/.config` on macOS unless
+`XDG_CONFIG_HOME` is set. pnpm is one: its global config lives in
+`~/Library/Preferences/pnpm/config.yaml`, not the `~/.config/pnpm/config.yaml`
+the documentation shows. Confirm a tool's real path with its own CLI
+(`pnpm config get globalconfig`) before adding it here.
 
 ## Install on a new machine
 

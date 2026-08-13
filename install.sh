@@ -55,5 +55,16 @@ while IFS= read -r -d '' f; do
   link "$f" "$HOME/.config/$rel"
 done < <(find "$DOTFILES_DIR/config" -type f -print0)
 
+# macOS-specific paths that fit neither convention above: macos/<path> -> ~/<path>
+# Some tools ignore ~/.config on macOS unless XDG_CONFIG_HOME is set. pnpm is one:
+# it reads ~/Library/Preferences/pnpm/config.yaml. Verify a tool's real path with
+# its own CLI (for pnpm: `pnpm config get globalconfig`) rather than trusting docs.
+if [[ "$(uname -s)" == "Darwin" && -d "$DOTFILES_DIR/macos" ]]; then
+  while IFS= read -r -d '' f; do
+    rel="${f#"$DOTFILES_DIR"/macos/}"
+    link "$f" "$HOME/$rel"
+  done < <(find "$DOTFILES_DIR/macos" -type f -print0)
+fi
+
 echo
 echo "Done. Open a new shell (or 'source ~/.zshrc') to pick up changes."
